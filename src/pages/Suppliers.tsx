@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Table,
   TableBody,
@@ -19,54 +20,84 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, Phone, Mail } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-
-interface Supplier {
-  id: number;
-  name: string;
-  contact: string;
-  email: string;
-  phone: string;
-  productsSupplied: number;
-  status: "Active" | "Inactive";
-}
-
-const initialSuppliers: Supplier[] = [
-  { id: 1, name: "Fresh Farms", contact: "John Smith", email: "john@freshfarms.com", phone: "+1-555-0101", productsSupplied: 45, status: "Active" },
-  { id: 2, name: "Dairy Co", contact: "Sarah Johnson", email: "sarah@dairyco.com", phone: "+1-555-0102", productsSupplied: 23, status: "Active" },
-  { id: 3, name: "Local Bakery", contact: "Mike Wilson", email: "mike@localbakery.com", phone: "+1-555-0103", productsSupplied: 18, status: "Active" },
-  { id: 4, name: "Garden Supply", contact: "Emma Davis", email: "emma@gardensupply.com", phone: "+1-555-0104", productsSupplied: 32, status: "Active" },
-  { id: 5, name: "Premium Meats", contact: "Robert Brown", email: "robert@premiummeats.com", phone: "+1-555-0105", productsSupplied: 15, status: "Inactive" },
-];
+import { Plus, Edit, Trash2, Phone, Mail, Loader2 } from "lucide-react";
+import { useSuppliers, useCreateSupplier, useDeleteSupplier } from "@/hooks/use-suppliers";
 
 const Suppliers = () => {
-  const [suppliers, setSuppliers] = useState<Supplier[]>(initialSuppliers);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const { toast } = useToast();
+  const [newSupplier, setNewSupplier] = useState({
+    name: "",
+    contact_person: "",
+    email: "",
+    phone: "",
+    address: "",
+    city: "",
+    state: "",
+    zip_code: "",
+    is_active: true,
+  });
 
-  const getStatusBadge = (status: Supplier["status"]) => {
-    return status === "Active" 
+  const { data: suppliers = [], isLoading, error } = useSuppliers();
+  const createSupplierMutation = useCreateSupplier();
+  const deleteSupplierMutation = useDeleteSupplier();
+
+  const getStatusBadge = (status: boolean) => {
+    return status 
       ? <Badge className="bg-success text-success-foreground">Active</Badge>
       : <Badge variant="secondary">Inactive</Badge>;
   };
 
-  const handleAddSupplier = () => {
-    toast({
-      title: "Supplier Added",
-      description: "New supplier has been added successfully.",
+  const handleAddSupplier = async () => {
+    if (!newSupplier.name) {
+      return;
+    }
+
+    await createSupplierMutation.mutateAsync({
+      name: newSupplier.name,
+      contact_person: newSupplier.contact_person || undefined,
+      email: newSupplier.email || undefined,
+      phone: newSupplier.phone || undefined,
+      address: newSupplier.address || undefined,
+      city: newSupplier.city || undefined,
+      state: newSupplier.state || undefined,
+      zip_code: newSupplier.zip_code || undefined,
+      is_active: newSupplier.is_active,
+    });
+
+    setNewSupplier({
+      name: "",
+      contact_person: "",
+      email: "",
+      phone: "",
+      address: "",
+      city: "",
+      state: "",
+      zip_code: "",
+      is_active: true,
     });
     setIsAddDialogOpen(false);
   };
 
-  const handleDeleteSupplier = (id: number) => {
-    setSuppliers(suppliers.filter(s => s.id !== id));
-    toast({
-      title: "Supplier Deleted",
-      description: "Supplier has been removed.",
-      variant: "destructive",
-    });
+  const handleDeleteSupplier = async (id: string) => {
+    await deleteSupplierMutation.mutateAsync(id);
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Loading suppliers...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center text-destructive p-8">
+        Error loading suppliers: {error.message}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -85,29 +116,109 @@ const Suppliers = () => {
               Add Supplier
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Add New Supplier</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
+            <div className="space-y-4 max-h-96 overflow-y-auto">
               <div>
-                <Label htmlFor="supplier-name">Supplier Name</Label>
-                <Input id="supplier-name" placeholder="Enter supplier name" />
+                <Label htmlFor="supplier-name">Supplier Name *</Label>
+                <Input 
+                  id="supplier-name" 
+                  placeholder="Enter supplier name"
+                  value={newSupplier.name}
+                  onChange={(e) => setNewSupplier(prev => ({ ...prev, name: e.target.value }))}
+                />
               </div>
               <div>
                 <Label htmlFor="contact-person">Contact Person</Label>
-                <Input id="contact-person" placeholder="Enter contact person name" />
+                <Input 
+                  id="contact-person" 
+                  placeholder="Enter contact person name"
+                  value={newSupplier.contact_person}
+                  onChange={(e) => setNewSupplier(prev => ({ ...prev, contact_person: e.target.value }))}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="email">Email</Label>
+                  <Input 
+                    id="email" 
+                    type="email" 
+                    placeholder="Enter email address"
+                    value={newSupplier.email}
+                    onChange={(e) => setNewSupplier(prev => ({ ...prev, email: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="phone">Phone</Label>
+                  <Input 
+                    id="phone" 
+                    placeholder="Enter phone number"
+                    value={newSupplier.phone}
+                    onChange={(e) => setNewSupplier(prev => ({ ...prev, phone: e.target.value }))}
+                  />
+                </div>
               </div>
               <div>
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="Enter email address" />
+                <Label htmlFor="address">Address</Label>
+                <Input 
+                  id="address" 
+                  placeholder="Enter address"
+                  value={newSupplier.address}
+                  onChange={(e) => setNewSupplier(prev => ({ ...prev, address: e.target.value }))}
+                />
               </div>
-              <div>
-                <Label htmlFor="phone">Phone</Label>
-                <Input id="phone" placeholder="Enter phone number" />
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="city">City</Label>
+                  <Input 
+                    id="city" 
+                    placeholder="City"
+                    value={newSupplier.city}
+                    onChange={(e) => setNewSupplier(prev => ({ ...prev, city: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="state">State</Label>
+                  <Input 
+                    id="state" 
+                    placeholder="State"
+                    value={newSupplier.state}
+                    onChange={(e) => setNewSupplier(prev => ({ ...prev, state: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="zip">ZIP Code</Label>
+                  <Input 
+                    id="zip" 
+                    placeholder="ZIP"
+                    value={newSupplier.zip_code}
+                    onChange={(e) => setNewSupplier(prev => ({ ...prev, zip_code: e.target.value }))}
+                  />
+                </div>
               </div>
-              <Button onClick={handleAddSupplier} className="w-full">
-                Add Supplier
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="is-active"
+                  checked={newSupplier.is_active}
+                  onCheckedChange={(checked) => setNewSupplier(prev => ({ ...prev, is_active: checked }))}
+                />
+                <Label htmlFor="is-active">Active</Label>
+              </div>
+              <Button 
+                onClick={handleAddSupplier} 
+                className="w-full"
+                disabled={createSupplierMutation.isPending || !newSupplier.name}
+              >
+                {createSupplierMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Adding Supplier...
+                  </>
+                ) : (
+                  "Add Supplier"
+                )}
               </Button>
             </div>
           </DialogContent>
@@ -120,55 +231,74 @@ const Suppliers = () => {
           <CardTitle>Suppliers ({suppliers.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Supplier Name</TableHead>
-                <TableHead>Contact Person</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead>Products</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {suppliers.map((supplier) => (
-                <TableRow key={supplier.id}>
-                  <TableCell className="font-medium">{supplier.name}</TableCell>
-                  <TableCell>{supplier.contact}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Mail className="h-4 w-4 text-muted-foreground" />
-                      {supplier.email}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4 text-muted-foreground" />
-                      {supplier.phone}
-                    </div>
-                  </TableCell>
-                  <TableCell>{supplier.productsSupplied}</TableCell>
-                  <TableCell>{getStatusBadge(supplier.status)}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="icon">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        onClick={() => handleDeleteSupplier(supplier.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+          {suppliers.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No suppliers available. Add your first supplier to get started.
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Supplier Name</TableHead>
+                  <TableHead>Contact Person</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Phone</TableHead>
+                  <TableHead>Products</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {suppliers.map((supplier) => (
+                  <TableRow key={supplier.id}>
+                    <TableCell className="font-medium">{supplier.name}</TableCell>
+                    <TableCell>{supplier.contact_person || "-"}</TableCell>
+                    <TableCell>
+                      {supplier.email ? (
+                        <div className="flex items-center gap-2">
+                          <Mail className="h-4 w-4 text-muted-foreground" />
+                          {supplier.email}
+                        </div>
+                      ) : (
+                        "-"
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {supplier.phone ? (
+                        <div className="flex items-center gap-2">
+                          <Phone className="h-4 w-4 text-muted-foreground" />
+                          {supplier.phone}
+                        </div>
+                      ) : (
+                        "-"
+                      )}
+                    </TableCell>
+                    <TableCell>{supplier.product_count || 0}</TableCell>
+                    <TableCell>{getStatusBadge(supplier.is_active)}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="icon">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => handleDeleteSupplier(supplier.id)}
+                          disabled={deleteSupplierMutation.isPending}
+                        >
+                          {deleteSupplierMutation.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>

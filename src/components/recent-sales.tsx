@@ -39,35 +39,40 @@ const recentSales = [
   },
 ]
 
-export function RecentSales() {
+export function RecentSales({ orders }: { orders: any[] }) {
+  if (!orders || orders.length === 0) {
+    return (
+      <div className="text-center py-4 text-muted-foreground">
+        No recent sales
+      </div>
+    );
+  }
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg font-semibold">Recent Sales</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {recentSales.map((sale) => (
-          <div key={sale.id} className="flex items-center gap-4">
-            <Avatar className="h-9 w-9">
-              <AvatarImage src="" alt={sale.customer} />
-              <AvatarFallback className="bg-primary/10 text-primary font-medium">
-                {sale.avatar}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 space-y-1">
-              <p className="text-sm font-medium text-foreground">
-                {sale.customer}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {sale.email}
-              </p>
-            </div>
-            <div className="text-sm font-medium text-foreground">
-              {sale.amount}
-            </div>
+    <div className="space-y-4">
+      {orders.map((order, index) => (
+        <div key={order.id || index} className="flex items-center gap-4">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
+            <span className="text-sm font-medium text-primary">
+              {(order.customers?.first_name || "G")[0]}
+            </span>
           </div>
-        ))}
-      </CardContent>
-    </Card>
-  )
+          <div className="flex-1 space-y-1">
+            <p className="text-sm font-medium text-foreground">
+              {order.customers 
+                ? `${order.customers.first_name} ${order.customers.last_name}`
+                : "Guest Customer"
+              }
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {order.order_number}
+            </p>
+          </div>
+          <div className="text-sm font-medium text-foreground">
+            +${order.total_amount?.toFixed(2) || "0.00"}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
