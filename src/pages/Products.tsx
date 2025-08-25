@@ -24,10 +24,13 @@ import { Plus, Edit, Trash2, Search, Loader2 } from "lucide-react";
 import { useProducts, useCreateProduct, useDeleteProduct, Product } from "@/hooks/use-products";
 import { useCategories } from "@/hooks/use-categories";
 import { useSuppliers } from "@/hooks/use-suppliers";
+import { EditProductDialog } from "@/components/edit-product-dialog";
 
 const Products = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [editProduct, setEditProduct] = useState<Product | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [newProduct, setNewProduct] = useState({
     name: "",
     description: "",
@@ -103,6 +106,11 @@ const Products = () => {
 
   const handleDeleteProduct = async (id: string) => {
     await deleteProductMutation.mutateAsync(id);
+  };
+
+  const handleEditProduct = (product: Product) => {
+    setEditProduct(product);
+    setIsEditDialogOpen(true);
   };
 
   if (productsLoading) {
@@ -307,7 +315,11 @@ const Products = () => {
                     <TableCell>{getStatusBadge(product)}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon">
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => handleEditProduct(product)}
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button 
@@ -331,6 +343,12 @@ const Products = () => {
           )}
         </CardContent>
       </Card>
+      
+      <EditProductDialog
+        product={editProduct}
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+      />
     </div>
   );
 };

@@ -8,7 +8,8 @@ import {
   Home,
   TrendingUp,
   AlertTriangle,
-  History
+  History,
+  LogOut
 } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 
@@ -23,6 +24,8 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { Button } from "@/components/ui/button"
+import { useAuth } from "@/hooks/use-auth"
 
 const navigationItems = [
   { title: "Dashboard", url: "/", icon: Home },
@@ -41,6 +44,7 @@ export function AppSidebar() {
   const location = useLocation()
   const currentPath = location.pathname
   const isCollapsed = state === "collapsed"
+  const { signOut, user } = useAuth()
 
   const isActive = (path: string) => currentPath === path
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
@@ -93,6 +97,23 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {user && (
+          <div className="mt-auto p-3">
+            <div className="mb-2 text-xs text-sidebar-foreground/60">
+              {!isCollapsed && user.email}
+            </div>
+            <Button
+              variant="ghost"
+              size={isCollapsed ? "icon" : "default"}
+              className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent"
+              onClick={() => signOut()}
+            >
+              <LogOut className="h-4 w-4" />
+              {!isCollapsed && <span className="ml-2">Sign Out</span>}
+            </Button>
+          </div>
+        )}
       </SidebarContent>
     </Sidebar>
   )

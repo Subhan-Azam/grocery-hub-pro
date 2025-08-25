@@ -21,10 +21,13 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, Trash2, Phone, Mail, Loader2 } from "lucide-react";
-import { useSuppliers, useCreateSupplier, useDeleteSupplier } from "@/hooks/use-suppliers";
+import { useSuppliers, useCreateSupplier, useDeleteSupplier, Supplier } from "@/hooks/use-suppliers";
+import { EditSupplierDialog } from "@/components/edit-supplier-dialog";
 
 const Suppliers = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [editSupplier, setEditSupplier] = useState<Supplier | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [newSupplier, setNewSupplier] = useState({
     name: "",
     contact_person: "",
@@ -80,6 +83,11 @@ const Suppliers = () => {
 
   const handleDeleteSupplier = async (id: string) => {
     await deleteSupplierMutation.mutateAsync(id);
+  };
+
+  const handleEditSupplier = (supplier: Supplier) => {
+    setEditSupplier(supplier);
+    setIsEditDialogOpen(true);
   };
 
   if (isLoading) {
@@ -277,7 +285,11 @@ const Suppliers = () => {
                     <TableCell>{getStatusBadge(supplier.is_active)}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon">
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => handleEditSupplier(supplier)}
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button 
@@ -301,6 +313,12 @@ const Suppliers = () => {
           )}
         </CardContent>
       </Card>
+      
+      <EditSupplierDialog
+        supplier={editSupplier}
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+      />
     </div>
   );
 };

@@ -22,9 +22,12 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, Trash2, Package, Loader2 } from "lucide-react";
 import { useCategories, useCreateCategory, useDeleteCategory, Category } from "@/hooks/use-categories";
+import { EditCategoryDialog } from "@/components/edit-category-dialog";
 
 const Categories = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [editCategory, setEditCategory] = useState<Category | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [newCategory, setNewCategory] = useState({
     name: "",
     description: "",
@@ -62,6 +65,11 @@ const Categories = () => {
 
   const handleDeleteCategory = async (id: string) => {
     await deleteCategoryMutation.mutateAsync(id);
+  };
+
+  const handleEditCategory = (category: Category) => {
+    setEditCategory(category);
+    setIsEditDialogOpen(true);
   };
 
   if (isLoading) {
@@ -218,7 +226,11 @@ const Categories = () => {
                     <TableCell>{getStatusBadge(category.is_active)}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => handleEditCategory(category)}
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button 
@@ -242,6 +254,12 @@ const Categories = () => {
           )}
         </CardContent>
       </Card>
+      
+      <EditCategoryDialog
+        category={editCategory}
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+      />
     </div>
   );
 };
