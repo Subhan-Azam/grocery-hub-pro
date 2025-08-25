@@ -9,6 +9,13 @@ import {
   AlertTriangle 
 } from "lucide-react"
 
+interface StatsData {
+  revenue: number
+  orders: number
+  products: number
+  suppliers: number
+}
+
 interface StatCardProps {
   title: string
   value: string
@@ -52,12 +59,12 @@ function StatCard({ title, value, change, trend, icon, description }: StatCardPr
   )
 }
 
-export function StatsCards() {
+export function StatsCards({ stats }: { stats: StatsData }) {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <StatCard
         title="Total Revenue"
-        value="$45,231"
+        value={`$${stats.revenue.toLocaleString()}`}
         change="+12.5%"
         trend="up"
         icon={<DollarSign className="h-4 w-4" />}
@@ -65,7 +72,7 @@ export function StatsCards() {
       />
       <StatCard
         title="Total Products"
-        value="1,247"
+        value={stats.products.toLocaleString()}
         change="+8.2%"
         trend="up"
         icon={<Package className="h-4 w-4" />}
@@ -73,19 +80,19 @@ export function StatsCards() {
       />
       <StatCard
         title="Orders This Month"
-        value="386"
+        value={stats.orders.toLocaleString()}
         change="+23.1%"
         trend="up"
         icon={<ShoppingCart className="h-4 w-4" />}
         description="processed orders"
       />
       <StatCard
-        title="Low Stock Alerts"
-        value="12"
+        title="Active Suppliers"
+        value={stats.suppliers.toLocaleString()}
         change="-4.8%"
         trend="down"
         icon={<AlertTriangle className="h-4 w-4" />}
-        description="items need restock"
+        description="currently active"
       />
     </div>
   )
