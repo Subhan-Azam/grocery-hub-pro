@@ -17,6 +17,7 @@ import Alerts from "./pages/Alerts";
 import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import POS from "./pages/POS";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -36,25 +37,29 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/auth" element={<Auth />} />
-            <Route path="/*" element={
-              <AuthGuard>
-                <DashboardLayout>
-                  <Routes>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/products" element={<Products />} />
-                    <Route path="/categories" element={<Categories />} />
-                    <Route path="/suppliers" element={<Suppliers />} />
-                    <Route path="/orders" element={<Orders />} />
-                    <Route path="/analytics" element={<Analytics />} />
-                    <Route path="/reports" element={<Reports />} />
-                    <Route path="/alerts" element={<Alerts />} />
-                    <Route path="/settings" element={<Settings />} />
-                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </DashboardLayout>
-              </AuthGuard>
-            } />
+            <Route
+              path="/*"
+              element={
+                <AuthGuard>
+                  <DashboardLayout>
+                    <Routes>
+                      <Route path="/" element={<Index />} />
+                      <Route path="/pos" element={<POS />} />
+                      <Route path="/products" element={<Products />} />
+                      <Route path="/categories" element={<Categories />} />
+                      <Route path="/suppliers" element={<Suppliers />} />
+                      <Route path="/orders" element={<Orders />} />
+                      <Route path="/analytics" element={<Analytics />} />
+                      <Route path="/reports" element={<Reports />} />
+                      <Route path="/alerts" element={<Alerts />} />
+                      <Route path="/settings" element={<Settings />} />
+                      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </DashboardLayout>
+                </AuthGuard>
+              }
+            />
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
