@@ -1,17 +1,18 @@
-import { useState } from "react"
-import { 
-  Package, 
-  ShoppingCart, 
-  Users, 
-  BarChart3, 
-  Settings, 
+import { useState } from "react";
+import {
+  Package,
+  ShoppingCart,
+  Users,
+  BarChart3,
+  Settings,
   Home,
   TrendingUp,
   AlertTriangle,
   History,
-  LogOut
-} from "lucide-react"
-import { NavLink, useLocation } from "react-router-dom"
+  LogOut,
+  Calculator,
+} from "lucide-react";
+import { NavLink, useLocation } from "react-router-dom";
 
 import {
   Sidebar,
@@ -23,12 +24,13 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "@/components/ui/sidebar"
-import { Button } from "@/components/ui/button"
-import { useAuth } from "@/hooks/use-auth"
+} from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/use-auth";
 
 const navigationItems = [
   { title: "Dashboard", url: "/", icon: Home },
+  { title: "POS System", url: "/pos", icon: Calculator },
   { title: "Products", url: "/products", icon: Package },
   { title: "Categories", url: "/categories", icon: ShoppingCart },
   { title: "Suppliers", url: "/suppliers", icon: Users },
@@ -37,20 +39,20 @@ const navigationItems = [
   { title: "Reports", url: "/reports", icon: TrendingUp },
   { title: "Alerts", url: "/alerts", icon: AlertTriangle },
   { title: "Settings", url: "/settings", icon: Settings },
-]
+];
 
 export function AppSidebar() {
-  const { state } = useSidebar()
-  const location = useLocation()
-  const currentPath = location.pathname
-  const isCollapsed = state === "collapsed"
-  const { signOut, user } = useAuth()
+  const { state } = useSidebar();
+  const location = useLocation();
+  const currentPath = location.pathname;
+  const isCollapsed = state === "collapsed";
+  const { signOut, user } = useAuth();
 
-  const isActive = (path: string) => currentPath === path
+  const isActive = (path: string) => currentPath === path;
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
-    isActive 
-      ? "bg-primary text-primary-foreground font-medium hover:bg-primary-hover" 
-      : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+    isActive
+      ? "bg-primary text-primary-foreground font-medium hover:bg-primary-hover"
+      : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground";
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
@@ -83,9 +85,9 @@ export function AppSidebar() {
               {navigationItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <NavLink 
-                      to={item.url} 
-                      end={item.url === "/"} 
+                    <NavLink
+                      to={item.url}
+                      end={item.url === "/"}
                       className={getNavCls}
                     >
                       <item.icon className="h-4 w-4" />
@@ -116,5 +118,5 @@ export function AppSidebar() {
         )}
       </SidebarContent>
     </Sidebar>
-  )
+  );
 }

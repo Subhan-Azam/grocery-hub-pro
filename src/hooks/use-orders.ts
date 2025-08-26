@@ -1,14 +1,14 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from './use-toast';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "./use-toast";
 
 export interface Order {
   id: string;
   order_number: string;
   customer_id?: string;
   warehouse_id: string;
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
-  payment_status: 'pending' | 'paid' | 'failed' | 'refunded';
+  status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
+  payment_status: "pending" | "paid" | "failed" | "refunded";
   subtotal: number;
   tax_amount: number;
   shipping_amount: number;
@@ -31,16 +31,18 @@ export interface Order {
 
 export const useOrders = () => {
   return useQuery({
-    queryKey: ['orders'],
+    queryKey: ["orders"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('orders')
-        .select(`
+        .from("orders")
+        .select(
+          `
           *,
           customers(first_name, last_name),
           order_items(quantity)
-        `)
-        .order('created_at', { ascending: false });
+        `
+        )
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
       return data as Order[];
@@ -53,9 +55,11 @@ export const useCreateOrder = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (order: { order_number: string; warehouse_id: string } & Partial<Order>) => {
+    mutationFn: async (
+      order: { order_number: string; warehouse_id: string } & Partial<Order>
+    ) => {
       const { data, error } = await supabase
-        .from('orders')
+        .from("orders")
         .insert([order])
         .select()
         .single();
@@ -64,7 +68,7 @@ export const useCreateOrder = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
       toast({
         title: "Order Created",
         description: "Order has been created successfully.",
@@ -80,6 +84,100 @@ export const useCreateOrder = () => {
   });
 };
 
+// Enhanced order creation with items and inventory updates
+export const useCompleteOrderSale = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({
+      order,
+      items,
+    }: {
+      order: any;
+      items: Array<{
+        product_id: string;
+        quantity: number;
+        unit_price: number;
+        total_price: number;
+      }>;
+    }) => {
+      // Start a transaction-like approach
+      const { data: orderData, error: orderError } = await supabase
+        .from("orders")
+        .insert([order])
+        .select()
+        .single();
+
+      if (orderError) throw orderError;
+
+      // Insert order items
+      const orderItems = items.map((item) => ({
+        ...item,
+        order_id: orderData.id,
+      }));
+
+      const { error: itemsError } = await supabase
+        .from("order_items")
+        .insert(orderItems);
+
+      if (itemsError) throw itemsError;
+
+      // Update inventory (reduce stock)
+      for (const item of items) {
+        // Get current inventory for the product
+        const { data: inventoryData, error: inventorySelectError } =
+          await supabase
+            .from("inventory")
+            .select("quantity")
+            .eq("product_id", item.product_id)
+            .single();
+
+        if (inventorySelectError) {
+          console.warn(
+            `No inventory record found for product ${item.product_id}`
+          );
+          continue;
+        }
+
+        // Update inventory quantity
+        const newQuantity = Math.max(0, inventoryData.quantity - item.quantity);
+
+        const { error: inventoryUpdateError } = await supabase
+          .from("inventory")
+          .update({
+            quantity: newQuantity,
+            available_quantity: newQuantity,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("product_id", item.product_id);
+
+        if (inventoryUpdateError) {
+          console.error(
+            `Failed to update inventory for product ${item.product_id}:`,
+            inventoryUpdateError
+          );
+        }
+      }
+
+      return orderData;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory"] });
+    },
+    onError: (error: any) => {
+      console.error("Order creation error:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to complete sale.",
+        variant: "destructive",
+      });
+    },
+  });
+};
+
 export const useUpdateOrder = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -87,9 +185,9 @@ export const useUpdateOrder = () => {
   return useMutation({
     mutationFn: async ({ id, ...order }: Partial<Order> & { id: string }) => {
       const { data, error } = await supabase
-        .from('orders')
+        .from("orders")
         .update(order)
-        .eq('id', id)
+        .eq("id", id)
         .select()
         .single();
 
@@ -97,7 +195,7 @@ export const useUpdateOrder = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
       toast({
         title: "Order Updated",
         description: "Order has been updated successfully.",
@@ -119,15 +217,12 @@ export const useDeleteOrder = () => {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('orders')
-        .delete()
-        .eq('id', id);
+      const { error } = await supabase.from("orders").delete().eq("id", id);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
       toast({
         title: "Order Deleted",
         description: "Order has been removed.",
