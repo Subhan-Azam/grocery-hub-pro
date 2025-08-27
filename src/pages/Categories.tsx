@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,11 +21,19 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, Package, Loader2 } from "lucide-react";
-import { useCategories, useCreateCategory, useDeleteCategory, Category } from "@/hooks/use-categories";
+import { Plus, Edit, Trash2, Package, Loader2, Eye } from "lucide-react";
+import {
+  useCategories,
+  useCreateCategory,
+  useDeleteCategory,
+  Category,
+} from "@/hooks/use-categories";
 import { EditCategoryDialog } from "@/components/edit-category-dialog";
+import { PageSkeleton } from "@/components/ui/page-loading";
+import { useLoadingDelay } from "@/hooks/use-loading-delay";
 
 const Categories = () => {
+  const navigate = useNavigate();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editCategory, setEditCategory] = useState<Category | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -34,14 +43,23 @@ const Categories = () => {
     is_active: true,
   });
 
-  const { data: categories = [], isLoading, error } = useCategories();
+  const {
+    data: categories = [],
+    isLoading: categoriesLoading,
+    error,
+  } = useCategories();
   const createCategoryMutation = useCreateCategory();
   const deleteCategoryMutation = useDeleteCategory();
 
+  // Use loading delay to prevent flash of loading states
+  const isLoading = useLoadingDelay({ isActuallyLoading: categoriesLoading });
+
   const getStatusBadge = (status: boolean) => {
-    return status 
-      ? <Badge className="bg-success text-success-foreground">Active</Badge>
-      : <Badge variant="secondary">Inactive</Badge>;
+    return status ? (
+      <Badge className="bg-success text-success-foreground">Active</Badge>
+    ) : (
+      <Badge variant="secondary">Inactive</Badge>
+    );
   };
 
   const handleAddCategory = async () => {
@@ -72,13 +90,12 @@ const Categories = () => {
     setIsEditDialogOpen(true);
   };
 
+  const handleViewCategoryProducts = (categoryId: string) => {
+    navigate(`/products?category=${categoryId}`);
+  };
+
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <span className="ml-2">Loading categories...</span>
-      </div>
-    );
+    return <PageSkeleton type="categories" />;
   }
 
   if (error) {
@@ -89,16 +106,22 @@ const Categories = () => {
     );
   }
 
-  const activeCategories = categories.filter(c => c.is_active);
-  const totalProducts = categories.reduce((sum, cat) => sum + (cat.product_count || 0), 0);
-  const avgProductsPerCategory = categories.length > 0 ? Math.round(totalProducts / categories.length) : 0;
+  const activeCategories = categories.filter((c) => c.is_active);
+  const totalProducts = categories.reduce(
+    (sum, cat) => sum + (cat.product_count || 0),
+    0
+  );
+  const avgProductsPerCategory =
+    categories.length > 0 ? Math.round(totalProducts / categories.length) : 0;
 
   return (
     <div className="space-y-6">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-foreground">Category Management</h2>
+          <h2 className="text-3xl font-bold text-foreground">
+            Category Management
+          </h2>
           <p className="text-muted-foreground">
             Organize your products into categories for better management
           </p>
@@ -117,32 +140,44 @@ const Categories = () => {
             <div className="space-y-4">
               <div>
                 <Label htmlFor="category-name">Category Name *</Label>
-                <Input 
-                  id="category-name" 
+                <Input
+                  id="category-name"
                   placeholder="Enter category name"
                   value={newCategory.name}
-                  onChange={(e) => setNewCategory(prev => ({ ...prev, name: e.target.value }))}
+                  onChange={(e) =>
+                    setNewCategory((prev) => ({
+                      ...prev,
+                      name: e.target.value,
+                    }))
+                  }
                 />
               </div>
               <div>
                 <Label htmlFor="description">Description</Label>
-                <Input 
-                  id="description" 
+                <Input
+                  id="description"
                   placeholder="Enter category description"
                   value={newCategory.description}
-                  onChange={(e) => setNewCategory(prev => ({ ...prev, description: e.target.value }))}
+                  onChange={(e) =>
+                    setNewCategory((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
+                  }
                 />
               </div>
               <div className="flex items-center space-x-2">
                 <Switch
                   id="is-active"
                   checked={newCategory.is_active}
-                  onCheckedChange={(checked) => setNewCategory(prev => ({ ...prev, is_active: checked }))}
+                  onCheckedChange={(checked) =>
+                    setNewCategory((prev) => ({ ...prev, is_active: checked }))
+                  }
                 />
                 <Label htmlFor="is-active">Active</Label>
               </div>
-              <Button 
-                onClick={handleAddCategory} 
+              <Button
+                onClick={handleAddCategory}
                 className="w-full"
                 disabled={createCategoryMutation.isPending || !newCategory.name}
               >
@@ -164,7 +199,9 @@ const Categories = () => {
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Categories</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Categories
+            </CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -176,22 +213,30 @@ const Categories = () => {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Products</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Products
+            </CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalProducts}</div>
-            <p className="text-xs text-muted-foreground">across all categories</p>
+            <p className="text-xs text-muted-foreground">
+              across all categories
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg Products/Category</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Avg Products/Category
+            </CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{avgProductsPerCategory}</div>
-            <p className="text-xs text-muted-foreground">products per category</p>
+            <p className="text-xs text-muted-foreground">
+              products per category
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -220,21 +265,33 @@ const Categories = () => {
               <TableBody>
                 {categories.map((category) => (
                   <TableRow key={category.id}>
-                    <TableCell className="font-medium">{category.name}</TableCell>
+                    <TableCell className="font-medium">
+                      {category.name}
+                    </TableCell>
                     <TableCell>{category.description || "-"}</TableCell>
                     <TableCell>{category.product_count || 0}</TableCell>
                     <TableCell>{getStatusBadge(category.is_active)}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() =>
+                            handleViewCategoryProducts(category.id)
+                          }
+                          title="View Products"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           onClick={() => handleEditCategory(category)}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button 
-                          variant="ghost" 
+                        <Button
+                          variant="ghost"
                           size="icon"
                           onClick={() => handleDeleteCategory(category.id)}
                           disabled={deleteCategoryMutation.isPending}
@@ -254,7 +311,7 @@ const Categories = () => {
           )}
         </CardContent>
       </Card>
-      
+
       <EditCategoryDialog
         category={editCategory}
         open={isEditDialogOpen}

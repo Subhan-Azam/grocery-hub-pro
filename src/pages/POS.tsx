@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { useProducts } from "@/hooks/use-products";
 import { useOrders, useCompleteOrderSale } from "@/hooks/use-orders";
+import { useWarehouses } from "@/hooks/use-warehouses";
 import {
   Trash2,
   Plus,
@@ -58,9 +59,13 @@ const POS = () => {
   const [showScanner, setShowScanner] = useState(false);
   const [showInvoice, setShowInvoice] = useState(false);
   const [lastOrderId, setLastOrderId] = useState<string | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [isProcessingOrder, setIsProcessingOrder] = useState(false);
 
   const { toast } = useToast();
   const { data: products = [], isLoading: productsLoading } = useProducts();
+  const { data: warehouses = [], isLoading: warehousesLoading } =
+    useWarehouses();
   const createOrder = useCompleteOrderSale();
 
   // Filter products based on search term (name, barcode, or SKU)
@@ -97,11 +102,6 @@ const POS = () => {
         },
       ]);
     }
-
-    toast({
-      title: "Product Added",
-      description: `${product.name} added to cart`,
-    });
   };
 
   // Update cart item quantity
@@ -151,8 +151,8 @@ const POS = () => {
     setShowScanner(false);
   };
 
-  // Handle checkout
-  const handleCheckout = async () => {
+  // Handle checkout button click - opens confirmation modal
+  const handleCheckout = () => {
     if (cart.length === 0) {
       toast({
         title: "Empty Cart",
@@ -162,9 +162,30 @@ const POS = () => {
       return;
     }
 
+    // Check if there are any warehouses available
+    if (warehouses.length === 0) {
+      toast({
+        title: "No Warehouse Available",
+        description:
+          "Please configure at least one warehouse before making sales.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setShowConfirmModal(true);
+  };
+
+  // Handle actual order processing
+  const handleConfirmOrder = async () => {
+    setIsProcessingOrder(true);
+
     try {
       // Generate order number
       const orderNumber = `POS-${Date.now()}`;
+
+      // Use the first available warehouse
+      const warehouseId = warehouses[0].id;
 
       // Create order data
       const orderData = {
@@ -175,8 +196,8 @@ const POS = () => {
         discount_amount: discountAmount,
         total_amount: grandTotal,
         payment_status: "paid" as const,
-        status: "completed" as const,
-        warehouse_id: "00000000-0000-0000-0000-000000000001", // Default warehouse
+        status: "delivered" as const,
+        warehouse_id: warehouseId,
         shipping_amount: 0,
         notes: "POS Sale",
       };
@@ -196,6 +217,7 @@ const POS = () => {
 
       setLastOrderId(result.id);
       setShowInvoice(true);
+      setShowConfirmModal(false);
 
       // Clear cart after successful order
       setCart([]);
@@ -213,6 +235,8 @@ const POS = () => {
         description: "Failed to process the sale. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsProcessingOrder(false);
     }
   };
 
@@ -418,10 +442,12 @@ const POS = () => {
               <Button
                 onClick={handleCheckout}
                 className="w-full mt-4"
-                disabled={cart.length === 0}
+                disabled={
+                  cart.length === 0 || warehousesLoading || isProcessingOrder
+                }
               >
                 <Calculator className="h-4 w-4 mr-2" />
-                Checkout
+                {isProcessingOrder ? "Processing..." : "Checkout"}
               </Button>
             </CardContent>
           </Card>
@@ -441,6 +467,96 @@ const POS = () => {
             onScan={handleBarcodeScan}
             onClose={() => setShowScanner(false)}
           />
+        </DialogContent>
+      </Dialog>
+
+      {/* Order Confirmation Dialog */}
+      <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Order</DialogTitle>
+            <DialogDescription>
+              Please review your order details before confirming the sale.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Order Summary */}
+            <div className="border rounded-lg p-4">
+              <h4 className="font-semibold mb-3">Order Summary</h4>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span>Items:</span>
+                  <span>
+                    {cart.length} item{cart.length !== 1 ? "s" : ""}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Subtotal:</span>
+                  <span>${subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Tax:</span>
+                  <span>${taxAmount.toFixed(2)}</span>
+                </div>
+                {discount > 0 && (
+                  <div className="flex justify-between text-green-600">
+                    <span>Discount ({discount}%):</span>
+                    <span>-${discountAmount.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="border-t pt-2">
+                  <div className="flex justify-between font-bold">
+                    <span>Total:</span>
+                    <span>${grandTotal.toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Customer Info */}
+            {selectedCustomer && (
+              <div className="border rounded-lg p-4">
+                <h4 className="font-semibold mb-2">Customer</h4>
+                <p className="text-sm">
+                  {selectedCustomer.first_name} {selectedCustomer.last_name}
+                </p>
+                {selectedCustomer.phone && (
+                  <p className="text-sm text-muted-foreground">
+                    {selectedCustomer.phone}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowConfirmModal(false)}
+                className="flex-1"
+                disabled={isProcessingOrder}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleConfirmOrder}
+                className="flex-1"
+                disabled={isProcessingOrder}
+              >
+                {isProcessingOrder ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <Receipt className="h-4 w-4 mr-2" />
+                    Confirm Order
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
