@@ -1,16 +1,7 @@
-import { useState, useMemo, useEffect } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useState, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -26,8 +17,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, Search, Loader2, X } from "lucide-react";
+import { Plus, Edit, Trash2, Loader2 } from "lucide-react";
 import {
   useProducts,
   useCreateProduct,
@@ -39,10 +29,13 @@ import { useSuppliers } from "@/hooks/use-suppliers";
 import { EditProductDialog } from "@/components/edit-product-dialog";
 import { PageSkeleton } from "@/components/ui/page-loading";
 import { useLoadingDelay } from "@/hooks/use-loading-delay";
+import { ProductForm } from "@/components/product-form";
+import { SearchInput } from "@/components/search-input";
+import { ProductStatusBadge } from "@/components/product-status-badge";
+import { PageHeader } from "@/components/page-header";
 
 const Products = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
@@ -88,27 +81,6 @@ const Products = () => {
     );
   }, [products, searchTerm]);
 
-  const getStatusBadge = (product: Product) => {
-    if (product.status === "inactive") {
-      return <Badge variant="secondary">Inactive</Badge>;
-    }
-    if (product.status === "discontinued") {
-      return <Badge variant="destructive">Discontinued</Badge>;
-    }
-    // Check stock levels based on min_stock_level
-    const stockLevel = product.min_stock_level || 0;
-    if (stockLevel === 0) {
-      return <Badge variant="destructive">Out of Stock</Badge>;
-    } else if (stockLevel <= 10) {
-      return (
-        <Badge className="bg-warning text-warning-foreground">Low Stock</Badge>
-      );
-    }
-    return (
-      <Badge className="bg-success text-success-foreground">In Stock</Badge>
-    );
-  };
-
   const handleAddProduct = async () => {
     if (!newProduct.name || !newProduct.sku) {
       return;
@@ -153,6 +125,18 @@ const Products = () => {
     setSearchParams({});
   };
 
+  const getPageSubtitle = () => {
+    return currentCategory
+      ? `Showing products in "${currentCategory.name}" category`
+      : "Manage your product inventory and stock levels";
+  };
+
+  const getPageTitle = () => {
+    return currentCategory
+      ? `Product Management - ${currentCategory.name}`
+      : "Product Management";
+  };
+
   if (isLoading) {
     return <PageSkeleton type="products" />;
   }
@@ -167,38 +151,18 @@ const Products = () => {
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-3xl font-bold text-foreground">
-            Product Management
-            {currentCategory && (
-              <span className="text-xl text-muted-foreground ml-2">
-                - {currentCategory.name}
-              </span>
-            )}
-          </h2>
-          <p className="text-muted-foreground">
-            {currentCategory
-              ? `Showing products in "${currentCategory.name}" category`
-              : "Manage your product inventory and stock levels"}
-          </p>
-          {categoryFilter && (
-            <div className="flex items-center gap-2 mt-2">
-              <Badge variant="outline" className="flex items-center gap-1">
-                Category: {currentCategory?.name || "Unknown"}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-4 w-4 p-0 hover:bg-transparent"
-                  onClick={handleClearCategoryFilter}
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </Badge>
-            </div>
-          )}
-        </div>
+      <PageHeader
+        title={getPageTitle()}
+        subtitle={getPageSubtitle()}
+        categoryFilter={
+          categoryFilter
+            ? {
+                name: currentCategory?.name || "Unknown",
+                onClear: handleClearCategoryFilter,
+              }
+            : undefined
+        }
+      >
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
             <Button className="bg-gradient-primary hover:bg-primary-hover">
@@ -210,165 +174,20 @@ const Products = () => {
             <DialogHeader>
               <DialogTitle>Add New Product</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4 max-h-96 overflow-y-auto">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="product-name">Product Name *</Label>
-                  <Input
-                    id="product-name"
-                    placeholder="Enter product name"
-                    value={newProduct.name}
-                    onChange={(e) =>
-                      setNewProduct((prev) => ({
-                        ...prev,
-                        name: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="sku">SKU *</Label>
-                  <Input
-                    id="sku"
-                    placeholder="Enter SKU"
-                    value={newProduct.sku}
-                    onChange={(e) =>
-                      setNewProduct((prev) => ({
-                        ...prev,
-                        sku: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="description">Description</Label>
-                <Input
-                  id="description"
-                  placeholder="Enter product description"
-                  value={newProduct.description}
-                  onChange={(e) =>
-                    setNewProduct((prev) => ({
-                      ...prev,
-                      description: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="cost-price">Cost Price ($)</Label>
-                  <Input
-                    id="cost-price"
-                    type="number"
-                    placeholder="0.00"
-                    value={newProduct.cost_price}
-                    onChange={(e) =>
-                      setNewProduct((prev) => ({
-                        ...prev,
-                        cost_price: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="selling-price">Selling Price ($)</Label>
-                  <Input
-                    id="selling-price"
-                    type="number"
-                    placeholder="0.00"
-                    value={newProduct.selling_price}
-                    onChange={(e) =>
-                      setNewProduct((prev) => ({
-                        ...prev,
-                        selling_price: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="category">Category</Label>
-                  <Select
-                    value={newProduct.category_id}
-                    onValueChange={(value) =>
-                      setNewProduct((prev) => ({ ...prev, category_id: value }))
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="supplier">Supplier</Label>
-                  <Select
-                    value={newProduct.supplier_id}
-                    onValueChange={(value) =>
-                      setNewProduct((prev) => ({ ...prev, supplier_id: value }))
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select supplier" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {suppliers.map((supplier) => (
-                        <SelectItem key={supplier.id} value={supplier.id}>
-                          {supplier.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="min-stock">Minimum Stock Level</Label>
-                <Input
-                  id="min-stock"
-                  type="number"
-                  placeholder="0"
-                  value={newProduct.min_stock_level}
-                  onChange={(e) =>
-                    setNewProduct((prev) => ({
-                      ...prev,
-                      min_stock_level: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-              <Button
-                onClick={handleAddProduct}
-                className="w-full"
-                disabled={
-                  createProductMutation.isPending ||
-                  !newProduct.name ||
-                  !newProduct.sku
-                }
-              >
-                {createProductMutation.isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Adding Product...
-                  </>
-                ) : (
-                  "Add Product"
-                )}
-              </Button>
-            </div>
+            <ProductForm
+              formData={newProduct}
+              onFormChange={setNewProduct}
+              categories={categories}
+              suppliers={suppliers}
+              onSubmit={handleAddProduct}
+              isLoading={createProductMutation.isPending}
+              submitText="Add Product"
+            />
           </DialogContent>
         </Dialog>
-      </div>
-
-      {/* Search */}
-      <div className="relative">
+      </PageHeader>
+      Search
+      {/* <div className="relative">
         <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Search products by name, category, or SKU..."
@@ -376,8 +195,12 @@ const Products = () => {
           onChange={(e) => setSearchTerm(e.target.value)}
           className="pl-10"
         />
-      </div>
-
+      </div> */}
+      <SearchInput
+        value={searchTerm}
+        onChange={setSearchTerm}
+        placeholder="Search products by name, category, or SKU..."
+      />
       {/* Products Table */}
       <Card>
         <CardHeader>
@@ -426,7 +249,9 @@ const Products = () => {
                     <TableCell>${product.cost_price.toFixed(2)}</TableCell>
                     <TableCell>${product.selling_price.toFixed(2)}</TableCell>
                     <TableCell>{product.suppliers?.name || "-"}</TableCell>
-                    <TableCell>{getStatusBadge(product)}</TableCell>
+                    <TableCell>
+                      <ProductStatusBadge product={product} />
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Button
@@ -457,7 +282,6 @@ const Products = () => {
           )}
         </CardContent>
       </Card>
-
       <EditProductDialog
         product={editProduct}
         open={isEditDialogOpen}
