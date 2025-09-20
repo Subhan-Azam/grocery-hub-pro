@@ -11,35 +11,75 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Eye, Package, Clock, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import {
+  Search,
+  Eye,
+  Package,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Loader2,
+} from "lucide-react";
 import { useOrders } from "@/hooks/use-orders";
+import { PageSkeleton } from "@/components/ui/page-loading";
+import { useLoadingDelay } from "@/hooks/use-loading-delay";
 
 const Orders = () => {
   const [searchTerm, setSearchTerm] = useState("");
 
-  const { data: orders = [], isLoading, error } = useOrders();
+  const { data: orders = [], isLoading: ordersLoading, error } = useOrders();
+
+  // Use loading delay to prevent flash of loading states
+  const isLoading = useLoadingDelay({ isActuallyLoading: ordersLoading });
 
   const filteredOrders = useMemo(() => {
-    return orders.filter(order =>
-      order.order_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (order.customers && 
-        `${order.customers.first_name} ${order.customers.last_name}`.toLowerCase().includes(searchTerm.toLowerCase())
-      )
+    return orders.filter(
+      (order) =>
+        order.order_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (order.customers &&
+          `${order.customers.first_name} ${order.customers.last_name}`
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()))
     );
   }, [orders, searchTerm]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "delivered":
-        return <Badge className="bg-success text-success-foreground"><CheckCircle className="h-3 w-3 mr-1" />Delivered</Badge>;
+        return (
+          <Badge className="bg-success text-success-foreground">
+            <CheckCircle className="h-3 w-3 mr-1" />
+            Delivered
+          </Badge>
+        );
       case "shipped":
-        return <Badge className="bg-info text-info-foreground"><Clock className="h-3 w-3 mr-1" />Shipped</Badge>;
+        return (
+          <Badge className="bg-info text-info-foreground">
+            <Clock className="h-3 w-3 mr-1" />
+            Shipped
+          </Badge>
+        );
       case "processing":
-        return <Badge className="bg-info text-info-foreground"><Clock className="h-3 w-3 mr-1" />Processing</Badge>;
+        return (
+          <Badge className="bg-info text-info-foreground">
+            <Clock className="h-3 w-3 mr-1" />
+            Processing
+          </Badge>
+        );
       case "pending":
-        return <Badge className="bg-warning text-warning-foreground"><Package className="h-3 w-3 mr-1" />Pending</Badge>;
+        return (
+          <Badge className="bg-warning text-warning-foreground">
+            <Package className="h-3 w-3 mr-1" />
+            Pending
+          </Badge>
+        );
       case "cancelled":
-        return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" />Cancelled</Badge>;
+        return (
+          <Badge variant="destructive">
+            <XCircle className="h-3 w-3 mr-1" />
+            Cancelled
+          </Badge>
+        );
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
@@ -63,12 +103,7 @@ const Orders = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <span className="ml-2">Loading orders...</span>
-      </div>
-    );
+    return <PageSkeleton type="orders" />;
   }
 
   if (error) {
@@ -80,11 +115,11 @@ const Orders = () => {
   }
 
   const statusCounts = {
-    pending: orders.filter(o => o.status === "pending").length,
-    processing: orders.filter(o => o.status === "processing").length,
-    shipped: orders.filter(o => o.status === "shipped").length,
-    delivered: orders.filter(o => o.status === "delivered").length,
-    cancelled: orders.filter(o => o.status === "cancelled").length,
+    pending: orders.filter((o) => o.status === "pending").length,
+    processing: orders.filter((o) => o.status === "processing").length,
+    shipped: orders.filter((o) => o.status === "shipped").length,
+    delivered: orders.filter((o) => o.status === "delivered").length,
+    cancelled: orders.filter((o) => o.status === "cancelled").length,
   };
 
   return (
@@ -104,13 +139,18 @@ const Orders = () => {
           return (
             <Card key={status}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium capitalize">{status} Orders</CardTitle>
+                <CardTitle className="text-sm font-medium capitalize">
+                  {status} Orders
+                </CardTitle>
                 <IconComponent className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{count}</div>
                 <p className="text-xs text-muted-foreground">
-                  {orders.length > 0 ? ((count / orders.length) * 100).toFixed(1) : 0}% of total
+                  {orders.length > 0
+                    ? ((count / orders.length) * 100).toFixed(1)
+                    : 0}
+                  % of total
                 </p>
               </CardContent>
             </Card>
@@ -141,7 +181,9 @@ const Orders = () => {
         <CardContent>
           {filteredOrders.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              {searchTerm ? "No orders found matching your search." : "No orders available yet."}
+              {searchTerm
+                ? "No orders found matching your search."
+                : "No orders available yet."}
             </div>
           ) : (
             <Table>
@@ -160,20 +202,34 @@ const Orders = () => {
               <TableBody>
                 {filteredOrders.map((order) => (
                   <TableRow key={order.id}>
-                    <TableCell className="font-medium">{order.order_number}</TableCell>
+                    <TableCell className="font-medium">
+                      {order.order_number}
+                    </TableCell>
                     <TableCell>
-                      {order.customers 
-                        ? `${order.customers.first_name} ${order.customers.last_name}` 
+                      {order.customers
+                        ? `${order.customers.first_name} ${order.customers.last_name}`
                         : "Guest Customer"}
                     </TableCell>
-                    <TableCell>{new Date(order.created_at).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      {new Date(order.created_at).toLocaleDateString()}
+                    </TableCell>
                     <TableCell>{order.order_items?.length || 0}</TableCell>
                     <TableCell>${order.total_amount.toFixed(2)}</TableCell>
                     <TableCell>{getStatusBadge(order.status)}</TableCell>
                     <TableCell>
-                      <Badge 
-                        variant={order.payment_status === 'paid' ? 'default' : order.payment_status === 'failed' ? 'destructive' : 'secondary'}
-                        className={order.payment_status === 'paid' ? 'bg-success text-success-foreground' : ''}
+                      <Badge
+                        variant={
+                          order.payment_status === "paid"
+                            ? "default"
+                            : order.payment_status === "failed"
+                            ? "destructive"
+                            : "secondary"
+                        }
+                        className={
+                          order.payment_status === "paid"
+                            ? "bg-success text-success-foreground"
+                            : ""
+                        }
                       >
                         {order.payment_status}
                       </Badge>

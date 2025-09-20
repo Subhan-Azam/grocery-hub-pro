@@ -23,6 +23,8 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, Trash2, Phone, Mail, Loader2 } from "lucide-react";
 import { useSuppliers, useCreateSupplier, useDeleteSupplier, Supplier } from "@/hooks/use-suppliers";
 import { EditSupplierDialog } from "@/components/edit-supplier-dialog";
+import { PageSkeleton } from "@/components/ui/page-loading";
+import { useLoadingDelay } from "@/hooks/use-loading-delay";
 
 const Suppliers = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -40,9 +42,12 @@ const Suppliers = () => {
     is_active: true,
   });
 
-  const { data: suppliers = [], isLoading, error } = useSuppliers();
+  const { data: suppliers = [], isLoading: suppliersLoading, error } = useSuppliers();
   const createSupplierMutation = useCreateSupplier();
   const deleteSupplierMutation = useDeleteSupplier();
+
+  // Use loading delay to prevent flash of loading states
+  const isLoading = useLoadingDelay({ isActuallyLoading: suppliersLoading });
 
   const getStatusBadge = (status: boolean) => {
     return status 
@@ -91,12 +96,7 @@ const Suppliers = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <span className="ml-2">Loading suppliers...</span>
-      </div>
-    );
+    return <PageSkeleton type="suppliers" />;
   }
 
   if (error) {

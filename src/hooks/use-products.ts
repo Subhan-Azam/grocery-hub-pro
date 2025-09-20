@@ -29,18 +29,23 @@ export interface Product {
   suppliers?: { name: string };
 }
 
-export const useProducts = () => {
+export const useProducts = (categoryId?: string) => {
   return useQuery({
-    queryKey: ['products'],
+    queryKey: ['products', categoryId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('products')
         .select(`
           *,
           categories(name),
           suppliers(name)
-        `)
-        .order('created_at', { ascending: false });
+        `);
+      
+      if (categoryId) {
+        query = query.eq('category_id', categoryId);
+      }
+      
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
       return data as Product[];

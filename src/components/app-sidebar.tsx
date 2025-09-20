@@ -3,11 +3,11 @@ import {
   Package,
   ShoppingCart,
   Users,
-  BarChart3,
-  Settings,
+  // BarChart3,
+  // Settings,
   Home,
-  TrendingUp,
-  AlertTriangle,
+  // TrendingUp,
+  // AlertTriangle,
   History,
   LogOut,
   Calculator,
@@ -35,10 +35,10 @@ const navigationItems = [
   { title: "Categories", url: "/categories", icon: ShoppingCart },
   { title: "Suppliers", url: "/suppliers", icon: Users },
   { title: "Orders", url: "/orders", icon: History },
-  { title: "Analytics", url: "/analytics", icon: BarChart3 },
-  { title: "Reports", url: "/reports", icon: TrendingUp },
-  { title: "Alerts", url: "/alerts", icon: AlertTriangle },
-  { title: "Settings", url: "/settings", icon: Settings },
+  // { title: "Analytics", url: "/analytics", icon: BarChart3 },
+  // { title: "Reports", url: "/reports", icon: TrendingUp },
+  // { title: "Alerts", url: "/alerts", icon: AlertTriangle },
+  // { title: "Settings", url: "/settings", icon: Settings },
 ];
 
 export function AppSidebar() {
@@ -48,18 +48,22 @@ export function AppSidebar() {
   const isCollapsed = state === "collapsed";
   const { signOut, user } = useAuth();
 
-  const isActive = (path: string) => currentPath === path;
-  const getNavCls = ({ isActive }: { isActive: boolean }) =>
-    isActive
-      ? "bg-primary text-primary-foreground font-medium hover:bg-primary-hover"
-      : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground";
+  const isActive = (path: string) => {
+    if (path === "/") {
+      return currentPath === path;
+    }
+    return currentPath.startsWith(path);
+  };
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-sidebar-border">
-      <SidebarContent>
+    <Sidebar
+      collapsible="icon"
+      className="border-r border-sidebar-border bg-sidebar"
+    >
+      <SidebarContent className="bg-sidebar">
         <div className="px-3 py-4">
           <div className="flex items-center gap-2">
-            <div className="bg-gradient-primary p-2 rounded-lg">
+            <div className="bg-primary p-2 rounded-lg">
               <Package className="h-6 w-6 text-primary-foreground" />
             </div>
             {!isCollapsed && (
@@ -84,12 +88,12 @@ export function AppSidebar() {
             <SidebarMenu>
               {navigationItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.url}
-                      end={item.url === "/"}
-                      className={getNavCls}
-                    >
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive(item.url)}
+                    className="data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:font-medium hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  >
+                    <NavLink to={item.url} end={item.url === "/"}>
                       <item.icon className="h-4 w-4" />
                       {!isCollapsed && <span>{item.title}</span>}
                     </NavLink>
@@ -101,14 +105,14 @@ export function AppSidebar() {
         </SidebarGroup>
 
         {user && (
-          <div className="mt-auto p-3">
+          <div className="mt-auto p-3 border-t border-sidebar-border">
             <div className="mb-2 text-xs text-sidebar-foreground/60">
               {!isCollapsed && user.email}
             </div>
             <Button
               variant="ghost"
               size={isCollapsed ? "icon" : "default"}
-              className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent"
+              className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               onClick={() => signOut()}
             >
               <LogOut className="h-4 w-4" />

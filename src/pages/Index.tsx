@@ -3,42 +3,51 @@ import { SalesChart } from "@/components/sales-chart";
 import { RecentSales } from "@/components/recent-sales";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Package, ShoppingCart, TrendingUp, Loader2 } from "lucide-react";
+import {
+  AlertTriangle,
+  Package,
+  ShoppingCart,
+  TrendingUp,
+  Loader2,
+} from "lucide-react";
 import { useProducts } from "@/hooks/use-products";
 import { useCategories } from "@/hooks/use-categories";
 import { useOrders } from "@/hooks/use-orders";
 import { useSuppliers } from "@/hooks/use-suppliers";
+import { PageSkeleton } from "@/components/ui/page-loading";
+import { useLoadingDelay } from "@/hooks/use-loading-delay";
 import { useMemo } from "react";
 
 const Index = () => {
   const { data: products = [], isLoading: productsLoading } = useProducts();
-  const { data: categories = [], isLoading: categoriesLoading } = useCategories();
+  const { data: categories = [], isLoading: categoriesLoading } =
+    useCategories();
   const { data: orders = [], isLoading: ordersLoading } = useOrders();
   const { data: suppliers = [], isLoading: suppliersLoading } = useSuppliers();
 
   const stats = useMemo(() => {
-    const totalRevenue = orders.reduce((sum, order) => sum + order.total_amount, 0);
+    const totalRevenue = orders.reduce(
+      (sum, order) => sum + order.total_amount,
+      0
+    );
     const totalOrders = orders.length;
     const totalProducts = products.length;
-    const activeSuppliers = suppliers.filter(s => s.is_active).length;
-    
+    const activeSuppliers = suppliers.filter((s) => s.is_active).length;
+
     return {
       revenue: totalRevenue,
       orders: totalOrders,
       products: totalProducts,
-      suppliers: activeSuppliers
+      suppliers: activeSuppliers,
     };
   }, [orders, products, suppliers]);
 
-  const isLoading = productsLoading || categoriesLoading || ordersLoading || suppliersLoading;
+  const actuallyLoading =
+    productsLoading || categoriesLoading || ordersLoading || suppliersLoading;
+  const isLoading = useLoadingDelay({ isActuallyLoading: actuallyLoading });
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <span className="ml-2">Loading dashboard...</span>
-      </div>
-    );
+    return <PageSkeleton type="dashboard" />;
   }
 
   return (

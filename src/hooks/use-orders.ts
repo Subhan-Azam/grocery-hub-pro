@@ -7,7 +7,13 @@ export interface Order {
   order_number: string;
   customer_id?: string;
   warehouse_id: string;
-  status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
+  status:
+    | "pending"
+    | "processing"
+    | "shipped"
+    | "delivered"
+    | "cancelled"
+    | "refunded";
   payment_status: "pending" | "paid" | "failed" | "refunded";
   subtotal: number;
   tax_amount: number;
